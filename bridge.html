@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Weazel relay</title>
+<style>
+  html, body { margin: 0; width: 100%; height: 100%; background: #000; overflow: hidden; }
+  iframe { display: block; width: 100%; height: 100%; border: 0; }
+</style>
+</head>
+<body>
+<script>
+(function () {
+  'use strict';
+
+  function announce() {
+    if (window.parent === window) return;
+    window.parent.postMessage(JSON.stringify({ event: 'bridgeReady', channel: 'widget' }), '*');
+  }
+
+  announce();
+  window.addEventListener('load', announce);
+  setTimeout(announce, 250);
+  setTimeout(announce, 1000);
+
+  var query = new URLSearchParams(location.search);
+  var id = query.get('v') || '';
+
+  if (!/^[A-Za-z0-9_-]{11}$/.test(id)) return;
+
+  var params = new URLSearchParams({
+    enablejsapi: '1',
+    autoplay: '1',
+    mute: query.get('mute') === '0' ? '0' : '1',
+    controls: '0',
+    disablekb: '1',
+    fs: '0',
+    modestbranding: '1',
+    iv_load_policy: '3',
+    rel: '0',
+    playsinline: '1',
+    loop: query.get('loop') === '0' ? '0' : '1',
+    playlist: id,
+    origin: location.origin
+  });
+
+  var player = document.createElement('iframe');
+  player.title = 'Lecteur';
+  player.setAttribute('allow', 'autoplay; encrypted-media');
+  player.setAttribute('tabindex', '-1');
+  player.src = 'https://www.youtube.com/embed/' + id + '?' + params.toString();
+  document.body.appendChild(player);
+
+  window.addEventListener('message', function (event) {
+    if (event.source === player.contentWindow) {
+      if (window.parent !== window) window.parent.postMessage(event.data, '*');
+      return;
+    }
+
+    if (event.source === window.parent) {
+      try {
+        player.contentWindow.postMessage(event.data, '*');
+      } catch (error) {
+        /* lecteur pas encore navigable */
+      }
+    }
+  });
+})();
+</script>
+</body>
+</html>
